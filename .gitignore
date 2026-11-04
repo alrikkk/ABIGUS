@@ -1,0 +1,17 @@
+# macOS metadata
+.DS_Store
+._*
+
+# Build and debug output
+*.dSYM/
+
+# Local secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.secret
+*credentials*
+*secrets*
