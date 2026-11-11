@@ -46,6 +46,64 @@ def build_container(metadata : dict, payload : bytes) -> bytes:
 
     return container_data + checksum
 
+
+def parse_container(container: bytes) -> tuple:
+    #to check min container length
+    if len(container) < HEADER_SIZE + 32:
+        raise ValueError("Container is too small")
+
+    #seperating the stored checksum and container data
+    stored_checksum = container[-32:]
+    container_data = container[:-32]
+
+    calculated_checksum = hashlib.sha256(container_data).digest()
+
+    #this verifies integrity
+    if stored_checksum != calculated_checksum:
+        raise ValueError("Container Checksum Mismatch")
+
+    header = container_data[:HEADER_SIZE]
+
+    magic, version, metadata_length = struct.unpack(
+        HEADER_FORMAT,
+        header
+    )
+
+    if magic != MAGIC:
+        raise ValueError("Invalid ABIGUS container")
+    if version != VERSION:
+        raise ValueError("Unsupported ABIGUS Version")
+
+    metadata_start = HEADER_SIZE
+    metadata_end = metadata_start + metadata_length
+
+    if metadata_end > len(container_data):
+        raise ValueError("Metadata extends beyond container data")
+
+    metadata_bytes = container_data[metadata_start:metadata_end]
+
+    try:
+        metadata_string = metadata_bytes.decode("utf-8")
+        metadata = json.loads(metadata_string)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise ValueError("Invalid container metadata")
+
+    if not isinstance(metadata, dict):
+        raise ValueError("Metadata must be a dictionary") #or type(metadata) == dict can also do 
+
+    payload = container_data[metadata_end:]
+
+    if "size" not in metadata:
+        raise ValueError("Metadata is missing file size")
+
+    if not isinstance(metadata["size"], int) or metadata["size"] < 0:
+        raise ValueError("Invalid metadata file size")
+
+    if len(payload) != metadata["size"]:
+        raise ValueError("Payload size does not match metadata")
+
+    return metadata, payload
+
 if __name__ == "__main__":
     test_payload = b"%PDF-1.7 example PDF content"
     sample_metadata = {
