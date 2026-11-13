@@ -114,9 +114,30 @@ if __name__ == "__main__":
 
     try:
         container = build_container(sample_metadata, test_payload)
+
+        #trying to tamper
+        tampered_container = bytearray(container)
+
+        #changing one byte in the payload
+        tampered_container[HEADER_SIZE + len(encode_metadata(sample_metadata))] ^= 1
+
+        try:
+            parse_container(bytes(tampered_container))
+            print("Tampering went undetected!")
+        except ValueError as error:
+            print("Tampering detected: ", error)
         print("Container created:", len(container), "bytes")
         print("First 9 bytes (header): ", container[:9])
         print("Last 32 bytes (checksum): ", container[-32:])
+
+        #to test container recovery
+        recovered_metadata, recovered_payload = parse_container(container)
+        print("Recovered meatdata: ", recovered_metadata)
+        print("Recovered payload: ", recovered_payload)
+
+        #to compare the original and recovered data
+        print("Payload matches: ", recovered_payload == test_payload)
+        print("Metadata matches: ", recovered_metadata == sample_metadata)
     except ValueError as error:
         print("Container rejected:",error)
 
