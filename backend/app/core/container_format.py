@@ -1,3 +1,7 @@
+"""the reason that i am taking soo long to do this is cause i forgot all about binary data and 
+have to learn everything one by one and i also have college work to look at , anyways i will try to 
+complete this ASAP, thanks 😊"""
+
 import json
 import struct
 import hashlib
@@ -30,9 +34,34 @@ def encode_metadata(metadata : dict) -> bytes :
 
     return encoded_data
 
+def validate_metadata(metadata: dict) -> None:
+    if not isinstance(metadata, dict):
+        raise ValueError("Metadata must be a dictionary")
 
-def build_container(metadata : dict, payload : bytes) -> bytes:
-    #encoding the metadata
+    #to check the required fields 
+    required_fields = ["filename", "size", "format"]
+
+    for field in required_fields:
+        if field not in metadata:
+            raise ValueError(f"Metadata is missing: {field}")
+
+    #validating file name
+    if not isinstance(metadata["filename"], str) or not metadata["filename"].strip():
+        raise ValueError("Invalid filename")
+
+    #validating file size
+    if type(metadata["size"]) is not int or metadata["size"] < 0:
+        raise ValueError("Invalid metadata file size")
+
+    #validating file format
+    if not isinstance(metadata["format"], str) or not metadata["format"].strip():
+        raise ValueError("invalid file format")
+
+
+def build_container(metadata: dict, payload: bytes) -> bytes:
+    validate_metadata(metadata)
+
+    # Encoding the metadata
     metadata_bytes = encode_metadata(metadata)
 
     if len(payload) != metadata["size"]:
@@ -88,16 +117,8 @@ def parse_container(container: bytes) -> tuple:
     except (UnicodeDecodeError, json.JSONDecodeError):
         raise ValueError("Invalid container metadata")
 
-    if not isinstance(metadata, dict):
-        raise ValueError("Metadata must be a dictionary") #or type(metadata) == dict can also do 
-
+    validate_metadata(metadata)
     payload = container_data[metadata_end:]
-
-    if "size" not in metadata:
-        raise ValueError("Metadata is missing file size")
-
-    if not isinstance(metadata["size"], int) or metadata["size"] < 0:
-        raise ValueError("Invalid metadata file size")
 
     if len(payload) != metadata["size"]:
         raise ValueError("Payload size does not match metadata")
