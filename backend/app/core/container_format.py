@@ -59,8 +59,11 @@ def validate_metadata(metadata: dict) -> None:
 
 
 def build_container(metadata: dict, payload: bytes) -> bytes:
-    validate_metadata(metadata)
 
+    if not isinstance(payload, bytes):
+        raise ValueError("Payload must be bytes")
+
+    validate_metadata(metadata)
     # Encoding the metadata
     metadata_bytes = encode_metadata(metadata)
 
@@ -77,6 +80,9 @@ def build_container(metadata: dict, payload: bytes) -> bytes:
 
 
 def parse_container(container: bytes) -> tuple:
+
+    if not isinstance(container, bytes):
+        raise ValueError("Container must be bytes")
     #to check min container length
     if len(container) < HEADER_SIZE + 32:
         raise ValueError("Container is too small")
@@ -132,6 +138,19 @@ if __name__ == "__main__":
         "size" : len(test_payload),
         "format" : "pdf"
     }
+
+    
+        #testing invalid container input
+    try:
+        parse_container(b"ABIG")
+    except ValueError as error:
+        print("Invalid container rejected:", error)
+
+    # Testing incorrect input type
+    try:
+       parse_container("ABIG")
+    except ValueError as error:
+       print("Invalid type rejected:", error)
 
     try:
         container = build_container(sample_metadata, test_payload)
