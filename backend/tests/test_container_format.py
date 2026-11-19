@@ -74,5 +74,5 @@ def test_parser_rejects_invalid_magic():
     new_checksum = hashlib.sha256(container_data).digest()
     container[-32:] = new_checksum
 
-    with pytest.raises(ValueError, match = "Invalid ABIGUS Container"):
+    with pytest.raises(ValueError, match = "Invalid ABIGUS container"):
         parse_container(bytes(container))
