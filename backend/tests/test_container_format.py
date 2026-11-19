@@ -76,3 +76,25 @@ def test_parser_rejects_invalid_magic():
 
     with pytest.raises(ValueError, match = "Invalid ABIGUS container"):
         parse_container(bytes(container))
+
+def test_build_container_rejects_path_transversal():
+    payload = b"test"
+    metadata = {
+        "filename": "../../secret.pdf",
+        "size": len(payload),
+        "format": "pdf"
+    }
+
+    with pytest.raises(ValueError, match="directory path"):
+        build_container(metadata, payload)
+
+def test_build_container_rejects_empty_filename():
+    payload = b"test"
+    metadata = {
+        "filename": "   ", #this is to test that strip func in the other main file
+        "size": len(payload), #🤣
+        "format": "txt"
+    }
+
+    with pytest.raises(ValueError, match = "Invalid filename"):
+        build_container(metadata, payload)
