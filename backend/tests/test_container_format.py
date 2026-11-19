@@ -98,3 +98,59 @@ def test_build_container_rejects_empty_filename():
 
     with pytest.raises(ValueError, match = "Invalid filename"):
         build_container(metadata, payload)
+
+def test_build_container_rejects_absolute_path():
+    payload = b"test"
+    metadata = {
+        "filename": "/Users/someone/secret.pdf",
+        "size": len(payload),
+        "format": "pdf"
+    }
+
+    with pytest.raises(ValueError, match = "directory path"):
+        build_container(metadata, payload)
+
+def test_build_container_rejects_windows_path():
+    payload = b"test"
+
+    metadata = {
+        "filename": "C:\\Users\\someone\\secret.pdf",
+        "size": len(payload),
+        "format": "pdf"
+    }
+
+    with pytest.raises(ValueError, match="directory path"):
+        build_container(metadata, payload)
+        
+def test_build_container_rejects_windows_drive_relative_path():
+    payload = b"test"
+    metadata = {
+        "filename": "C:secret.pdf",
+        "size": len(payload),
+        "format": "pdf"
+    }
+
+    with pytest.raises(ValueError, match="directory path"):
+        build_container(metadata, payload)
+
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "report.pdf",
+        "my project.zip",
+        "résumé.txt",
+        "image_2026.png",
+    ]
+)
+def test_build_container_accepts_valid_filenames(filename):
+    payload = b"test"
+    metadata = {
+        "filename": filename,
+        "size": len(payload),
+        "format": "test"
+    }
+
+    container = build_container(metadata, payload)
+    recovered_metadata, recovered_payload = parse_container(container)
+    assert recovered_metadata["filename"] == filename
+    assert recovered_payload == payload

@@ -6,7 +6,7 @@ import json
 import struct
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 
 MAGIC = b"ABIG"
@@ -47,11 +47,16 @@ def validate_metadata(metadata: dict) -> None:
         if field not in metadata:
             raise ValueError(f"Metadata is missing: {field}")
 
-   #Validating filename
+    # Validating filename
     filename = metadata["filename"]
     if not isinstance(filename, str) or not filename.strip():
         raise ValueError("Invalid filename")
-    if filename in {".",".."} or Path(filename).name != filename or "\\" in filename:
+    if (
+        filename in {".", ".."}
+        or Path(filename).name != filename
+        or "\\" in filename
+        or PureWindowsPath(filename).drive
+    ):
         raise ValueError("Filename must not contain a directory path")
 
 
