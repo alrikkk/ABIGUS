@@ -154,3 +154,52 @@ def test_build_container_accepts_valid_filenames(filename):
     recovered_metadata, recovered_payload = parse_container(container)
     assert recovered_metadata["filename"] == filename
     assert recovered_payload == payload
+
+@pytest.mark.parametrize(
+    "missing_field",
+    ["filename", "size", "format"]
+)
+def test_build_container_rejects_missing_metadata_fields(missing_field):
+    payload =b"test"
+    metadata = {
+        "filename": "test.txt",
+        "size": len(payload),
+        "format": "txt"
+    }
+    metadata.pop(missing_field)
+    with pytest.raises(ValueError, match=f"Metadata is missing: {missing_field}"):
+        build_container(metadata, payload)
+
+def test_build_container_rejects_boolean_size():
+    payload =b"x"
+
+    metadata = {
+        "filename": "test.txt",
+        "size": True,
+        "format": "txt"
+    }
+
+    with pytest.raises(ValueError, match="Invalid metadata file size"):
+        build_container(metadata, payload)
+
+@pytest.mark.parametrize(
+    ("field", "invalid_value", "expected_error"),
+    [
+        ("filename", None, "Invalid filename"),
+        ("filename", 123, "Invalid filename"),
+        ("format", None, "invalid file format"),
+        ("format", 123, "invalid file format"),
+    ]
+)
+def test_build_container_rejects_invalid_metadata_types(field, invalid_value, expected_error):
+    payload = b"test"
+    metadata = {
+        "filename": "test.txt",
+        "size": len(payload),
+        "format": "txt"
+    }
+    field
+
+    metadata[field] = invalid_value
+    with pytest.raises(ValueError, match = expected_error):
+        build_container(metadata, payload)
