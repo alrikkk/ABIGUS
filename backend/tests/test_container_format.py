@@ -1,5 +1,7 @@
 import pytest
 import hashlib
+import json
+import struct
 from app.core.container_format import build_container, parse_container
 
 def test_container_round_trip():
@@ -203,3 +205,62 @@ def test_build_container_rejects_invalid_metadata_types(field, invalid_value, ex
     metadata[field] = invalid_value
     with pytest.raises(ValueError, match = expected_error):
         build_container(metadata, payload)
+
+def test_parser_rejects_invalid_metadata():
+    payload =b"test"
+    metadata = {
+        "filename": "../secret.pdf:",
+        "size": len(payload),
+        "format": "pdf"
+    }
+
+    #to covert the metadata into JSON bytes
+    metadata_bytes = json.dumps(metadata).encode("utf-8")
+    #constructing a valid ABIG header
+    header = struct.pack(
+        ">4sBI",
+        b"ABIG",
+        1,
+        len(metadata_bytes)
+    )
+
+    #combining the header,metadata and payload
+    container_data = header + metadata_bytes + payload
+    #generating a vllid checksum
+    checksum = hashlib.sha256(container_data).digest()
+    container = container_data + checksum
+    
+    with pytest.raises(ValueError, match ="directory path"):
+        parse_container(container)
+
+@pytest.mark.parametrize(
+    "missing_field",
+    ["filename", "size", "format"]
+)
+def test_parser_rejects_missing_metadata_fields(missing_field):
+    payload = b"test"
+
+    metadata = {
+        "filename": "test.txt",
+        "size": len(payload),
+        "format": "txt"
+    }
+    metadata.pop(missing_field)
+    metadata_bytes = json.dumps(metadata).encode("utf-8")
+
+    header = struct.pack(
+        ">4sBI",
+        b"ABIG",
+        1,
+        len(metadata_bytes)
+    )
+
+    container_data = header + metadata_bytes + payload
+    checksum = hashlib.sha256(container_data).digest()
+    container = container_data + checksum
+
+    with pytest.raises(
+        ValueError,
+        match = f"Metadata is missing: {missing_field}"
+    ):
+        parse_container(container)
