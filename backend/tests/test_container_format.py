@@ -264,3 +264,30 @@ def test_parser_rejects_missing_metadata_fields(missing_field):
         match = f"Metadata is missing: {missing_field}"
     ):
         parse_container(container)
+
+def test_parser_rejects_none_dictionary_metadata():
+    payload = b"test"
+
+    #This is vlaid Json, buts its root is a list not a dict
+    metadata_bytes = json.dumps(
+        ["secret.pdf", len(payload), "pdf"]
+    ).encode("utf-8")
+
+    #now manually contructing the ABIGUS header
+    header = struct.pack(
+        ">4sBI",
+        b"ABIG",
+        1,
+        len(metadata_bytes)
+    )
+
+    #combining header, metadata adn the payload
+    container_data = header + metadata_bytes + payload 
+
+    #to generate a valid cheksum
+
+    checksum = hashlib.sha256(container_data).digest()
+    container = container_data + checksum
+
+    with pytest.raises(ValueError, match="Metadata must be a dictionary"):
+        parse_container(container)
