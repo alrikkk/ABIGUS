@@ -291,3 +291,23 @@ def test_parser_rejects_none_dictionary_metadata():
 
     with pytest.raises(ValueError, match="Metadata must be a dictionary"):
         parse_container(container)
+
+def test_parser_rejects_malformed_json_metadata():
+    payload = b"test"
+    # Deliberate malformed Json
+    metadata_bytes = b'{"filename": '
+    
+    header = struct.pack(
+        ">4sBI",
+        b"ABIG",
+        1,
+        len(metadata_bytes)
+    )
+
+    #constructing a container with a valid checksum
+    container_data = header + metadata_bytes + payload 
+    checksum = hashlib.sha256(container_data).digest()
+    container = container_data + checksum
+
+    with pytest.raises(ValueError, match="Invalid container metadata"):
+        parse_container(container)
