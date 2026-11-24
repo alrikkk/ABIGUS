@@ -27,3 +27,20 @@ def test_png_binary_round_trip(original_data):
     decoded_data = decode_from_png(png_data)
 
     assert decoded_data == original_data
+
+def test_encode_rejects_non_bytes():
+    with pytest.raises(TypeError, match="Container must be bytes"):
+        encode_to_png("hello")
+
+def test_encode_rejects_empty_data():
+    with pytest.raises(ValueError, match="Container cannot be empty"):
+        encode_to_png(b"")
+
+def test_decode_rejects_non_bytes():
+    with pytest.raises(TypeError, match="PNG data must be bytes"):
+        decode_from_png("non bytes")
+
+def test_decode_rejects_invalid_png():
+    with pytest.raises(ValueError, match="Invalid or currupted PNG"):
+        decode_from_png(b"not a png")
+

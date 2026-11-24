@@ -61,7 +61,7 @@ def decode_from_png(png_data: bytes) -> bytes:
         raw_data = image.tobytes()
     
     except (Image.UnidentifiedImageError, OSError) as error:
-        raise ValueError("Invalid or curripted PNG") from error
+        raise ValueError("Invalid or currupted PNG") from error
 
     #to check if data is lesser than 8 bytes 
     if len(raw_data) < 8:
