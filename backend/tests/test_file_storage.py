@@ -1,6 +1,18 @@
+import pytest
 from app.core.file_storage import store_file_as_png, recover_file_from_png
 
-def test_file_storage_round_trip(tmp_path):
+
+@pytest.mark.parametrize(
+    "original_data",
+    [
+        b"%PDF-1.7\nABIGUS storage test\n\x00\x01\x02",
+        bytes(range(256)),
+        bytes(range(256)) * 4096,
+    ],
+    ids=["small-file", "all-byte-values", "one-megabyte"]
+)
+
+def test_file_storage_round_trip(tmp_path, original_data):
     #creating sone original binary data
     original_data = b"%PDF-1.7\nABIGUS storage test\n\x00\x01\x02"
 
@@ -24,3 +36,4 @@ def test_file_storage_round_trip(tmp_path):
     #verifying byte-for-byte recovery
     assert recovered_file.read_bytes() == original_data
     assert recovered_file.name == "sample.pdf"
+
